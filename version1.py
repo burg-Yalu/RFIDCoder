@@ -321,6 +321,8 @@ class Ui_MainWindow(object):
         self.ReceiveDatalist.clicked.connect(self.receive_data)
         self.GenerateData_2.clicked.connect(self.generate_data_H)
         self.ReceiveDatalist_2.clicked.connect(self.receive_data_H)
+        self.GenerateData_3.clicked.connect(self.generate_data_CRC)
+        self.ReceiveDatalist_3.clicked.connect(self.receive_data_CRC)
 
 
     def generate_data(self):
@@ -614,6 +616,189 @@ class Ui_MainWindow(object):
             return 0
         else:
             return count
+
+#-------------------------------------------------------------------------------------------------------------------------------
+    def generate_data_CRC(self):
+        self.generate_data_CRC = []
+        self.generate_data_CRC_SendData = []
+        def XOR(str1, str2):  # 实现模2减法
+            ans = ''
+            if str1[0] == '0':
+                return '0', str1[1:]
+            else:
+                for i in range(len(str1)):
+                    if (str1[i] == '0' and str2[i] == '0'):
+                        ans = ans + '0'
+                    elif (str1[i] == '1' and str2[i] == '1'):
+                        ans = ans + '0'
+                    else:
+                        ans = ans + '1'
+            return '1', ans[1:]
+
+        def CRC_Encoding(str1, str2):  # CRC编码
+            length = len(str2)
+            str3 = str1 + '0' * (length - 1)
+            ans = ''
+            yus = str3[0:length]
+            for i in range(len(str1)):
+                str4, yus = XOR(yus, str2)
+                ans = ans + str4
+                if i == len(str1) - 1:
+                    break
+                else:
+                    yus = yus + str3[i + length]
+            ans = str1 + yus
+            return ans
+
+        def CRC_Decoding(str1, str2):  # CRC解码
+            length = len(str2)
+            str3 = str1 + '0' * (length - 1)
+            yus = str3[0:length]
+            for i in range(len(str1)):
+                str4, yus = XOR(yus, str2)
+                if i == len(str1) - 1:
+                    break
+                else:
+                    yus = yus + str3[i + length]
+            return yus == '0' * len(yus)
+
+        def generate_binary_data(num_bits=8):  # 生成随机二进制数据（8位）
+            return ''.join(random.choice('01') for _ in range(num_bits))
+
+
+        generate_data_CRC = [generate_binary_data() for _ in range(100)]
+
+        # 用户输入生成比特模式
+        str2 = "100000111"
+
+        # 模拟发送这些数据并通过CRC编码
+        encoded_data_list = []
+        for str1 in generate_data_CRC:
+            encoded_data = CRC_Encoding(str1, str2)
+            encoded_data_list.append(encoded_data)
+            self.generate_data_CRC.append(str1)
+            self.generate_data_CRC_SendData.append(encoded_data)
+
+
+        self.SendDataTable_3.setRowCount(100)  # 设置100行
+        self.SendDataTable_3.setColumnCount(2)  # 设置2列
+
+        for i in range(100):
+            # 第一列：原始8位数据
+            self.SendDataTable_3.setItem(i, 0, QtWidgets.QTableWidgetItem(self.generate_data_CRC[i]))
+
+            # 第三列：完整的发送数据
+            self.SendDataTable_3.setItem(i, 1, QtWidgets.QTableWidgetItem(self.generate_data_CRC_SendData[i]))
+
+        # 调整表格列宽度以适应内容
+        self.SendDataTable_3.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_3.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+
+
+    def receive_data_CRC(self):
+        wrong_crc=0
+        pass_crc=0
+
+        self.receive_data_CRC_result = []
+        def XOR(str1, str2):  # 实现模2减法
+            ans = ''
+            if str1[0] == '0':
+                return '0', str1[1:]
+            else:
+                for i in range(len(str1)):
+                    if (str1[i] == '0' and str2[i] == '0'):
+                        ans = ans + '0'
+                    elif (str1[i] == '1' and str2[i] == '1'):
+                        ans = ans + '0'
+                    else:
+                        ans = ans + '1'
+            return '1', ans[1:]
+
+        def CRC_Encoding(str1, str2):  # CRC编码
+            length = len(str2)
+            str3 = str1 + '0' * (length - 1)
+            ans = ''
+            yus = str3[0:length]
+            for i in range(len(str1)):
+                str4, yus = XOR(yus, str2)
+                ans = ans + str4
+                if i == len(str1) - 1:
+                    break
+                else:
+                    yus = yus + str3[i + length]
+            ans = str1 + yus
+            return ans
+
+        def CRC_Decoding(str1, str2):  # CRC解码
+            length = len(str2)
+            str3 = str1 + '0' * (length - 1)
+            yus = str3[0:length]
+            for i in range(len(str1)):
+                str4, yus = XOR(yus, str2)
+                if i == len(str1) - 1:
+                    break
+                else:
+                    yus = yus + str3[i + length]
+            return yus == '0' * len(yus)
+
+        num_changes = random.randint(0, 20)  # 随机选择更改的数量（最大 20 组）
+
+        # 复制原始 CRC 数据
+        modified_data_list = self.generate_data_CRC_SendData.copy()
+
+        # 随机更改这些数据中的一到两位
+        for _ in range(num_changes):
+            # 随机选择一组数据
+            idx = random.randint(0, len(modified_data_list) - 1)
+            data = modified_data_list[idx]
+
+            # 随机选择要更改的位数（1 或 2 位）
+            num_bits_to_change = random.randint(1, 2)
+
+            # 将字符串转换为列表方便修改
+            data_list = list(data)
+
+            # 随机选择需要更改的位
+            for _ in range(num_bits_to_change):
+                bit_idx = random.randint(0, len(data_list) - 1)
+                # 切换该位（0 -> 1 或 1 -> 0）
+                data_list[bit_idx] = '1' if data_list[bit_idx] == '0' else '0'
+
+            # 将修改后的数据重新拼接成字符串
+            modified_data_list[idx] = ''.join(data_list)
+
+        # 将修改后的数据和未修改的数据按顺序保存到 receive_data_CRC
+        self.receive_data_CRC = modified_data_list
+        str2 = "100000111"
+
+        for i, encoded_data in enumerate(self.receive_data_CRC):
+            flag = CRC_Decoding(encoded_data, str2)
+            if flag:
+                self.receive_data_CRC_result.append("正确")
+                pass_crc+=1
+            else:
+                self.receive_data_CRC_result.append("错误")
+                wrong_crc+=1
+        self.ReceiveDataTable_3.setRowCount(100)  # 设置100行
+        self.ReceiveDataTable_3.setColumnCount(2)  # 设置2列
+
+        for i in range(100):
+            # 第一列：原始8位数据
+            self.ReceiveDataTable_3.setItem(i, 0, QtWidgets.QTableWidgetItem(self.receive_data_CRC[i]))
+
+            # 第三列：完整的发送数据
+            self.ReceiveDataTable_3.setItem(i, 1, QtWidgets.QTableWidgetItem(self.receive_data_CRC_result[i]))
+
+        # 调整表格列宽度以适应内容
+        self.ReceiveDataTable_3.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable_3.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.PassedData1_3.setText(str(pass_crc))
+        self.WorngDataAmount1_3.setText(str(wrong_crc))
+        self.UndetectedDataAmount1_3.setText(str(0))
+        self.DataAmount1_3.setText(str(100))
+        self.WrongPercent1_3.setText(str(wrong_crc) + "%")
+
+
 
     def set_row_color(self, row, color):
         # 设置行的颜色
