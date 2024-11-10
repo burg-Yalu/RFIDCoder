@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-import random
 
-# Form implementation generated from reading ui file 'untitled.ui'
+# Form implementation generated from reading ui file 'version4tabs.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #
@@ -13,10 +12,6 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
-    def __init__(self):
-        self.modified_data_H = []  # 保存修改后的数据
-        self.generated_data_H = []  # 保存生成的所有数据
-
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -116,8 +111,6 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable.setRowCount(0)
         self.ReceiveDataScrollArea.setWidget(self.scrollAreaWidgetContents_2)
         self.tabWidget.addTab(self.SD, "")
-
-
         self.H = QtWidgets.QWidget()
         self.H.setObjectName("H")
         self.frame_2 = QtWidgets.QFrame(self.H)
@@ -209,9 +202,6 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable_2.setRowCount(0)
         self.ReceiveDataScrollArea_2.setWidget(self.scrollAreaWidgetContents_4)
         self.tabWidget.addTab(self.H, "")
-
-
-
         self.CRC = QtWidgets.QWidget()
         self.CRC.setObjectName("CRC")
         self.frame_3 = QtWidgets.QFrame(self.CRC)
@@ -315,194 +305,6 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
         self.tabWidget.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-
-        self.GenerateData.clicked.connect(self.generate_data)
-        self.ReceiveDatalist.clicked.connect(self.receive_data)
-        self.GenerateData_2.clicked.connect(self.generate_data_H)
-
-
-    def generate_data(self):
-        # 生成长度为100的8位二进制数组
-        self.data = []
-        for _ in range(100):
-            binary_data = ''.join(random.choice('01') for _ in range(8))  # 随机生成8位二进制数据
-            parity_bit = self.calculate_parity(binary_data)  # 计算奇偶校验位
-            self.data.append((binary_data, parity_bit))
-
-        # 计算校验数据
-        self.PassedData1.setText(str(sum(1 for data, parity in self.data if parity == self.calculate_parity(data))))
-        self.WorngDataAmount1.setText(
-            str(sum(1 for data, parity in self.data if parity != self.calculate_parity(data))))
-        self.DataAmount1.setText(str(len(self.data)))  # 总数据量
-        self.UndetectedDataAmount1.setText('0')  # 初步设定无异常数据，后面再根据修改情况调整
-        wrong_and_undetected = int(self.WorngDataAmount1.toPlainText())  # 错误数据数量
-        total_data = int(self.DataAmount1.toPlainText())
-        self.WrongPercent1.setText(f"{(wrong_and_undetected / total_data) * 100:.2f}%")  # 错误率
-
-        # 清空表格并填充新的数据
-        self.SendDataTable.setRowCount(100)  # 设置100行
-        self.SendDataTable.setColumnCount(2)  # 设置2列
-
-        for row, (data, parity) in enumerate(self.data):
-            self.SendDataTable.setItem(row, 0, QtWidgets.QTableWidgetItem(data))  # 第一列：8位二进制数据
-            self.SendDataTable.setItem(row, 1, QtWidgets.QTableWidgetItem(parity))  # 第二列：奇偶校验位
-
-        # 调整表格列宽度以适应内容
-        self.SendDataTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.SendDataTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-
-    def calculate_parity(self, binary_data):
-        # 计算奇偶校验位：统计1的个数，如果为偶数则校验位为0，否则为1
-        ones_count = binary_data.count('1')
-        return '0' if ones_count % 2 == 0 else '1'
-
-    def receive_data(self):
-        # 随机修改不超过10个元素，每个元素修改1到2位
-        self.modified_data = []
-        undetected1=0;
-
-        # 随机选择10个位置进行修改（最多10个元素）
-        indices_to_modify = random.sample(range(100), min(10, len(self.data)))  # 随机选择最多10组数据
-
-        for idx in range(100):
-            binary_data, original_parity = self.data[idx]
-
-            # 如果当前数据组被选中进行修改
-            if idx in indices_to_modify:
-                modified_binary = list(binary_data)  # 将字符串转换为列表便于修改
-                num_changes = random.randint(1, 2)  # 随机选择修改1到2位
-
-                for _ in range(num_changes):
-                    index = random.randint(0, 7)  # 随机选择一个位置
-                    modified_binary[index] = '1' if modified_binary[index] == '0' else '0'  # 改变该位
-
-                modified_binary = ''.join(modified_binary)
-                modified_parity = self.calculate_parity(modified_binary)
-                self.modified_data.append((modified_binary, original_parity, modified_parity))
-                if modified_binary != binary_data and original_parity == modified_parity:undetected1+=1
-            else:
-                # 未被选中的数据保持原样
-                self.modified_data.append((binary_data, original_parity, original_parity))
-
-        # 清空接收数据表格并填充新的数据
-        self.ReceiveDataTable.setRowCount(len(self.modified_data))  # 设置行数为修改后的数据长度
-        self.ReceiveDataTable.setColumnCount(3)  # 设置3列
-
-        for row, (modified_binary, original_parity, modified_parity) in enumerate(self.modified_data):
-            self.ReceiveDataTable.setItem(row, 0, QtWidgets.QTableWidgetItem(modified_binary))  # 修改后的二进制数据
-            self.ReceiveDataTable.setItem(row, 1, QtWidgets.QTableWidgetItem(original_parity))  # 原始校验位
-            self.ReceiveDataTable.setItem(row, 2, QtWidgets.QTableWidgetItem(modified_parity))  # 新计算的校验位
-
-        # 更新数据统计
-        passed = sum(
-            1 for data, original_parity, modified_parity in self.modified_data if original_parity == modified_parity)
-        wrong = sum(
-            1 for data, original_parity, modified_parity in self.modified_data if original_parity != modified_parity)
-
-
-        # undetected 的计算：修改后的数据与原数据不一致，且原始校验位和修改后的校验位一致
-
-        self.PassedData1.setText(str(passed))
-        self.WorngDataAmount1.setText(str(wrong))
-        self.UndetectedDataAmount1.setText(str(undetected1))  # 更新 undetected 数据
-
-        # 计算百分比
-        total = len(self.modified_data)
-        wrong_and_undetected = wrong + undetected1
-        self.WrongPercent1.setText(f"{(wrong_and_undetected / total) * 100:.2f}%")
-
-        # 清空接收数据表格并填充新的数据
-        self.ReceiveDataTable.setRowCount(len(self.modified_data))  # 设置行数为修改后的数据长度
-        self.ReceiveDataTable.setColumnCount(3)  # 设置3列
-
-        for row, (modified_binary, original_parity, modified_parity) in enumerate(self.modified_data):
-            # 更新表格内容
-            self.ReceiveDataTable.setItem(row, 0, QtWidgets.QTableWidgetItem(modified_binary))  # 第一列：修改后的8位数据
-            self.ReceiveDataTable.setItem(row, 1, QtWidgets.QTableWidgetItem(original_parity))  # 第二列：原始数据的奇偶校验位
-            self.ReceiveDataTable.setItem(row, 2, QtWidgets.QTableWidgetItem(modified_parity))  # 第三列：修改后的奇偶校验位
-
-            # 判断第二列和第三列的奇偶校验位是否相同
-            if original_parity != modified_parity:
-                # 如果第二列和第三列不同，设置该行文本为红色
-                self.set_row_color(row, "red")
-            elif modified_binary != self.data[row][0]:
-                # 如果第二列和第三列相同，但修改后的数据与原数据不同，设置该行文本为绿色
-                self.set_row_color(row, "green")
-
-        # 调整表格列宽度以适应内容
-        self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-
-        # 获取表格宽度
-        table_width = self.ReceiveDataTable.width()
-
-        # 设置三列的宽度比例 2:1:1
-        column_0_width = table_width * 2 / 4  # 第1列宽度
-        column_1_width = table_width * 1 / 4  # 第2列宽度
-        column_2_width = table_width * 1 / 4  # 第3列宽度
-
-        # 设置列宽
-        self.ReceiveDataTable.setColumnWidth(0, column_0_width)
-        self.ReceiveDataTable.setColumnWidth(1, column_1_width)
-        self.ReceiveDataTable.setColumnWidth(2, column_2_width)
-
-    def generate_data_H(self):
-        self.generate_data_H_original = []
-        self.generate_data_H_originalVerify = []
-        self.generate_data_H_SendData = []
-        for _ in range(100):
-            parity_bits_H_Original = [0] * 4
-            temp_data = ''.join(random.choice('01') for _ in range(8))
-            for i in range(4):
-                parity_bits_H_Original[i] = self.calculate_parity_H(temp_data, i)
-            self.generate_data_H_originalVerify.append(parity_bits_H_Original)
-            print(parity_bits_H_Original)
-            self.generate_data_H_original.append(temp_data)
-            print(temp_data)
-            full_data = ['0'] * 12
-            data_idx = 0
-            for i in range(12):
-                if i not in [0, 1, 3, 7]:  # 校验位的索引，分别是1, 2, 4, 8
-                    full_data[i] = temp_data[data_idx]
-                    data_idx += 1
-            full_data[0], full_data[1], full_data[3], full_data[7] = parity_bits_H_Original[0], parity_bits_H_Original[1], parity_bits_H_Original[2], parity_bits_H_Original[3]
-            send_data = ''.join(map(str, full_data))
-            self.generate_data_H_SendData.append(send_data)
-            print(send_data)
-        self.SendDataTable_2.setRowCount(100)  # 设置100行
-        self.SendDataTable_2.setColumnCount(3)  # 设置2列
-
-        for i in range(100):
-            # 第一列：原始8位数据
-            self.SendDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.generate_data_H_original[i]))
-
-            # 第二列：奇偶校验位
-            self.SendDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
-                ''.join(map(str, self.generate_data_H_originalVerify[i]))))
-
-            # 第三列：完整的发送数据
-            self.SendDataTable_2.setItem(i, 2, QtWidgets.QTableWidgetItem(self.generate_data_H_SendData[i]))
-
-        # 调整表格列宽度以适应内容
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-
-    #海明校验单个位校验位
-    def calculate_parity_H(self,temp_data, index):
-        parity = 0
-        for i in range(8):
-            if ((i >> index) & 1) == 1:  # 按照海明码规则选择对应的位
-                parity ^= int(temp_data[i])  # 异或校验
-        return parity
-
-    def set_row_color(self, row, color):
-        # 设置行的颜色
-        for col in range(3):
-            item = self.ReceiveDataTable.item(row, col)
-            if item:
-                item.setForeground(QtGui.QColor(color))
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate

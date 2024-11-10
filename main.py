@@ -1,6 +1,6 @@
 import sys
 from PyQt5 import QtWidgets
-from version3 import Ui_MainWindow  # 假设你的 UI 代码是保存为 test_ui.py
+from version1 import Ui_MainWindow  # 假设你的 UI 代码是保存为 test_ui.py
 
 
 def main():
