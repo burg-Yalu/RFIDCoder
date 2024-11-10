@@ -54,7 +54,7 @@ def main():  # 主函数
     binary_data_list = [generate_binary_data() for _ in range(100)]
 
     # 用户输入生成比特模式
-    str2 = input("请输入生成比特模式：")
+    str2 = "100000111"
 
     # 模拟发送这些数据并通过CRC编码
     encoded_data_list = []
