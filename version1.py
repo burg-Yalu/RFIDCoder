@@ -10,6 +10,7 @@ import random
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from sympy.physics.units import weber
 
 
 class Ui_MainWindow(object):
@@ -319,6 +320,7 @@ class Ui_MainWindow(object):
         self.GenerateData.clicked.connect(self.generate_data)
         self.ReceiveDatalist.clicked.connect(self.receive_data)
         self.GenerateData_2.clicked.connect(self.generate_data_H)
+        self.ReceiveDatalist_2.clicked.connect(self.receive_data_H)
 
 
     def generate_data(self):
@@ -451,15 +453,14 @@ class Ui_MainWindow(object):
         self.generate_data_H_original = []
         self.generate_data_H_originalVerify = []
         self.generate_data_H_SendData = []
+        self.receive_data_H = []
         for _ in range(100):
             parity_bits_H_Original = [0] * 4
             temp_data = ''.join(random.choice('01') for _ in range(8))
             for i in range(4):
                 parity_bits_H_Original[i] = self.calculate_parity_H(temp_data, i)
             self.generate_data_H_originalVerify.append(parity_bits_H_Original)
-            print(parity_bits_H_Original)
             self.generate_data_H_original.append(temp_data)
-            print(temp_data)
             full_data = ['0'] * 12
             data_idx = 0
             for i in range(12):
@@ -469,7 +470,7 @@ class Ui_MainWindow(object):
             full_data[0], full_data[1], full_data[3], full_data[7] = parity_bits_H_Original[0], parity_bits_H_Original[1], parity_bits_H_Original[2], parity_bits_H_Original[3]
             send_data = ''.join(map(str, full_data))
             self.generate_data_H_SendData.append(send_data)
-            print(send_data)
+            self.receive_data_H.append(send_data)
         self.SendDataTable_2.setRowCount(100)  # 设置100行
         self.SendDataTable_2.setColumnCount(3)  # 设置2列
 
@@ -497,6 +498,123 @@ class Ui_MainWindow(object):
                 parity ^= int(temp_data[i])  # 异或校验
         return parity
 
+    def receive_data_H(self):
+        self.receive_data_H_Verify = []
+        self.receive_data_H_Original = []
+        self.receive_data_H_Result = []
+        passH = 0
+        wrongH = 0
+        undetectedH = 0
+
+        # 随机选择需要修改的项数（不超过20项）
+        num_changes = random.randint(1, 20)
+
+        # 随机选择要修改的元素的索引
+        indices_to_modify = random.sample(range(len(self.receive_data_H)), num_changes)
+
+        # 修改选中的数据
+        for idx in indices_to_modify:
+            # 当前二进制字符串
+            data = self.receive_data_H[idx]
+
+            # 确保数据是12位
+            if len(data) != 12:
+                continue
+
+            # 随机选择要修改的位数（不超过3位）
+            num_bits_to_modify = random.randint(1, 3)
+
+            # 生成随机的位索引进行修改
+            bit_indices = random.sample(range(12), num_bits_to_modify)
+
+            # 将数据转换为列表形式便于修改
+            data_list = list(data)
+
+            # 修改选中的位
+            for bit_idx in bit_indices:
+                # 翻转该位（0变1，1变0）
+                data_list[bit_idx] = '1' if data_list[bit_idx] == '0' else '0'
+
+            # 将修改后的数据重新转换为字符串
+            self.receive_data_H[idx] = ''.join(data_list)
+
+        # 遍历所有数据
+        for data in self.receive_data_H:
+            # 提取0, 1, 3, 7位
+            self.receive_data_H_Verify.append(data[0] + data[1] + data[3] + data[7])
+
+            # 提取其他位（2, 4, 5, 6, 8, 9, 10, 11位）
+            self.receive_data_H_Original.append(
+                data[2] + data[4] + data[5] + data[6] + data[8] + data[9] + data[10] + data[11])
+
+        for idx in range(100):
+            if self.receive_data_H[idx] == self.generate_data_H_SendData[idx]:
+                self.receive_data_H_Result.append("正确")
+                passH += 1
+                continue
+            # 调用judge方法并修正条件判断
+            result = self.judge(self.receive_data_H_Verify[idx], self.receive_data_H_Original[idx])
+            if result == 0:
+                self.receive_data_H_Result.append("两位错以上")
+                wrongH += 1
+            else:
+                self.receive_data_H_Result.append(f"{result}位错")
+                wrongH += 1
+
+        self.ReceiveDataTable_2.setRowCount(100)  # 设置100行
+        self.ReceiveDataTable_2.setColumnCount(2)  # 设置2列
+
+        for i in range(100):
+            # 第一列：原始8位数据
+            self.ReceiveDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.receive_data_H[i]))
+
+            # 第二列：奇偶校验位
+            self.ReceiveDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
+                ''.join(map(str, self.receive_data_H_Result[i]))))
+
+        # 调整表格列宽度以适应内容
+        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.PassedData1_2.setText(str(passH))
+        self.WorngDataAmount1_2.setText(str(wrongH))
+        self.UndetectedDataAmount1_2.setText(str(0))
+        self.DataAmount1_2.setText(str(100))
+        self.WrongPercent1_2.setText(str(wrongH)+"%")
+
+    # 修正后的 judge 方法
+    def judge(self, verify, original):
+        p1 = original[0] + original[2] + original[4] + original[6]
+        p2 = original[0] + original[2] + original[3] + original[5] + original[6]
+        p3 = original[1] + original[2] + original[3] + original[7]
+        p4 = original[4] + original[5] + original[6] + original[7]
+
+        # 将code改为可变列表
+        code = ['0', '0', '0', '0']
+        count = 0
+
+        if p1.count('1') % 2 != 1:
+            code[0] = '1'
+            if code[0] != verify[0]:
+                count += 1
+        if p2.count('1') % 2 != 1:
+            code[1] = '1'
+            if code[1] != verify[1]:
+                count += 2
+        if p3.count('1') % 2 != 1:
+            code[2] = '1'
+            if code[2] != verify[2]:
+                count += 4
+        if p4.count('1') % 2 != 1:
+            code[3] = '1'
+            if code[3] != verify[3]:
+                count += 8  # 这个值可能是8，而不是4，因为 p4 影响到的是4位
+
+        # 返回判断结果
+        if code == list(verify):
+            return 0
+        else:
+            return count
+
     def set_row_color(self, row, color):
         # 设置行的颜色
         for col in range(3):
@@ -519,7 +637,7 @@ class Ui_MainWindow(object):
         self.label_5.setText(_translate("MainWindow", "未检出错误数据："))
         self.label_6.setText(_translate("MainWindow", "错误率："))
         self.ReceiveDataBox.setTitle(_translate("MainWindow", "发送数据"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.SD), _translate("MainWindow", "Tab 1"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.SD), _translate("MainWindow", "奇偶校验"))
         self.SendDataBox_2.setTitle(_translate("MainWindow", "发送数据"))
         self.label_7.setText(_translate("MainWindow", "数据："))
         self.CaculateBitSD_2.setText(_translate("MainWindow", "计算校验位"))
@@ -532,7 +650,7 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "未检出错误数据："))
         self.label_12.setText(_translate("MainWindow", "错误率："))
         self.ReceiveDataBox_2.setTitle(_translate("MainWindow", "发送数据"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.H), _translate("MainWindow", "Tab 2"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.H), _translate("MainWindow", "海明校验"))
         self.SendDataBox_3.setTitle(_translate("MainWindow", "发送数据"))
         self.label_13.setText(_translate("MainWindow", "数据："))
         self.CaculateBitSD_3.setText(_translate("MainWindow", "计算校验位"))
@@ -545,4 +663,4 @@ class Ui_MainWindow(object):
         self.label_17.setText(_translate("MainWindow", "未检出错误数据："))
         self.label_18.setText(_translate("MainWindow", "错误率："))
         self.ReceiveDataBox_3.setTitle(_translate("MainWindow", "发送数据"))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.CRC), _translate("MainWindow", "页"))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.CRC), _translate("MainWindow", "CRC校验"))
