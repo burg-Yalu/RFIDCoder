@@ -211,6 +211,12 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable_2.setColumnCount(0)
         self.ReceiveDataTable_2.setRowCount(0)
         self.ReceiveDataScrollArea_2.setWidget(self.scrollAreaWidgetContents_4)
+        self.DataLength_H = QtWidgets.QTextEdit(self.frame_2)
+        self.DataLength_H.setGeometry(QtCore.QRect(190, 0, 111, 31))
+        self.DataLength_H.setObjectName("DataLength_H")
+        self.label_19 = QtWidgets.QLabel(self.frame_2)
+        self.label_19.setGeometry(QtCore.QRect(120, 10, 72, 15))
+        self.label_19.setObjectName("label_19")
         self.tabWidget.addTab(self.H, "")
 
 
@@ -305,6 +311,12 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable_3.setColumnCount(0)
         self.ReceiveDataTable_3.setRowCount(0)
         self.ReceiveDataScrollArea_3.setWidget(self.scrollAreaWidgetContents_6)
+        self.label_20 = QtWidgets.QLabel(self.frame_3)
+        self.label_20.setGeometry(QtCore.QRect(120, 10, 72, 15))
+        self.label_20.setObjectName("label_20")
+        self.DataLength_CRC = QtWidgets.QTextEdit(self.frame_3)
+        self.DataLength_CRC.setGeometry(QtCore.QRect(190, 0, 111, 31))
+        self.DataLength_CRC.setObjectName("DataLength_CRC")
         self.tabWidget.addTab(self.CRC, "")
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
@@ -321,7 +333,10 @@ class Ui_MainWindow(object):
 
         self.GenerateData.clicked.connect(self.generate_data)
         self.ReceiveDatalist.clicked.connect(self.receive_data)
-        self.databit_H = 16
+        self.CaculateBitSD.clicked.connect(self.CaculateBitSD_SD)
+        self.databit_H = 8
+        self.CaculateBitSD_2.clicked.connect(self.calculate_parity_H_Single)
+        self.CaculateBitSD_3.clicked.connect(self.generate_data_CRC_Single)
         self.GenerateData_2.clicked.connect(self.generate_data_H)
         self.ReceiveDatalist_2.clicked.connect(self.receive_data_H)
         self.GenerateData_3.clicked.connect(self.generate_data_CRC)
@@ -333,7 +348,12 @@ class Ui_MainWindow(object):
         while n % 2 == 0:
             n = n // 2
         return True
-
+    def CaculateBitSD_SD(self):
+        text = self.InputSingleData.toPlainText()
+        if text.count('1')%2 == 1:
+            self.CaculateSingleDataBit.setText('0')
+        else:
+            self.CaculateSingleDataBit.setText('1')
     def generate_data(self):
         # 生成长度为100的8位二进制数组
         self.data = []
@@ -355,7 +375,7 @@ class Ui_MainWindow(object):
         # 清空表格并填充新的数据
         self.SendDataTable.setRowCount(100)  # 设置100行
         self.SendDataTable.setColumnCount(2)  # 设置2列
-
+        self.SendDataTable.setHorizontalHeaderLabels(['8位二进制数据', '奇偶校验位'])
         for row, (data, parity) in enumerate(self.data):
             self.SendDataTable.setItem(row, 0, QtWidgets.QTableWidgetItem(data))  # 第一列：8位二进制数据
             self.SendDataTable.setItem(row, 1, QtWidgets.QTableWidgetItem(parity))  # 第二列：奇偶校验位
@@ -446,6 +466,7 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable.setHorizontalHeaderLabels(['收到的8位二进制数据', '原奇偶校验位', '现奇偶校验位'])
 
         # 获取表格宽度
         table_width = self.ReceiveDataTable.width()
@@ -471,7 +492,9 @@ class Ui_MainWindow(object):
         self.generate_data_H_SendData = []
         self.receive_data_H = []
         self.generate_data_H_Original_AfterInsert =[]
-
+        self.databit_H = int(self.DataLength_H.toPlainText())
+        self.HamingCode = []
+        self.correctFullCode = []
         # 动态计算需要多少个校验位
         m = math.ceil(math.log(self.databit_H +1, 2))
         self.p_count_H = m
@@ -492,23 +515,34 @@ class Ui_MainWindow(object):
                    count += 1
             # 计算校验位
             full_Hamingcode = ''.join([str(i) for i in self.calculate_parity_H(data_bit_H1)])
+            each_Hamingcode =''
+            for i in range(len(full_Hamingcode)):
+                for j in range(m):
+                    if i+1 == 2 ** j:
+                        each_Hamingcode += full_Hamingcode[i]
+            self.HamingCode.append(each_Hamingcode)
+
             self.generate_data_H_originalVerify.append(full_Hamingcode)
             self.generate_data_H_original.append(temp_data)
             self.receive_data_H.append(full_Hamingcode)
+            self.correctFullCode.append(full_Hamingcode)
 
 
 
         # 更新表格显示
         self.SendDataTable_2.setRowCount(100)
-        self.SendDataTable_2.setColumnCount(2)
+        self.SendDataTable_2.setColumnCount(3)
 
         for i in range(100):
             self.SendDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.generate_data_H_original[i]))
+            self.SendDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(self.HamingCode[i]))
 
-            self.SendDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(self.generate_data_H_originalVerify[i]))
+            self.SendDataTable_2.setItem(i, 2, QtWidgets.QTableWidgetItem(self.generate_data_H_originalVerify[i]))
 
         self.SendDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_2.setHorizontalHeaderLabels([f"{self.databit_H}位二进制数据", '海明校验码','发送数据'])
 
 
     # 计算海明码单个校验位的方法
@@ -533,6 +567,45 @@ class Ui_MainWindow(object):
                 data_bit_H1[step - 1] = '1'
 
         return data_bit_H1
+
+    def calculate_parity_H_Single(self):
+        length = math.ceil(math.log(len(self.InputSingleData_2.toPlainText()) + 1, 2))
+        data_bit_H1 = ['0'] * (length + len(self.InputSingleData_2.toPlainText()))
+        temp_data = self.InputSingleData_2.toPlainText()
+        count = 0
+
+
+        for j in range(len(self.InputSingleData_2.toPlainText()) + length):
+            if j == 0 or j == 1 or j == 3 or j == 7 or j == 15:
+                continue
+            else:
+                data_bit_H1[j] = temp_data[count]
+                count += 1
+
+        for i in range(length):
+            step = 2 ** i
+            index_p = step - 1
+            count_H = 0
+            while index_p < len(data_bit_H1):
+                # Calculate parity bit by summing the bits at the positions
+                data_bit_H1[step - 1] = int(data_bit_H1[step - 1]) + int(data_bit_H1[index_p])
+                index_p += 1
+                count_H += 1
+                if count_H == step:
+                    index_p += step
+                    count_H = 0
+
+            # Set the parity bit to '0' or '1' depending on the result
+            if data_bit_H1[step - 1] % 2 == 1:
+                data_bit_H1[step - 1] = '0'
+            else:
+                data_bit_H1[step - 1] = '1'
+
+        # Convert the list of bits to a string
+        data_bit_H1_str = ''.join(data_bit_H1)
+
+        # Set the text with the resulting string
+        self.CaculateSingleDataBit_2.setText(data_bit_H1_str)
 
     def calculate_parity_H_String(self, data_bit_H1):
         result_Haming_String = 0
@@ -608,17 +681,22 @@ class Ui_MainWindow(object):
             else:
                 self.receive_data_H_Result.append("两位错以上")
                 wrongH += 1
+                self.correctFullCode[idx] = '未知'
 
         self.ReceiveDataTable_2.setRowCount(100)
-        self.ReceiveDataTable_2.setColumnCount(2)
+        self.ReceiveDataTable_2.setColumnCount(3)
 
         for i in range(100):
             self.ReceiveDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.receive_data_H[i]))
             self.ReceiveDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
                 ''.join(map(str, self.receive_data_H_Result[i]))))
+            self.ReceiveDataTable_2.setItem(i, 2, QtWidgets.QTableWidgetItem(self.correctFullCode[i]))
+
 
         self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable_2.setHorizontalHeaderLabels([f"收到的{self.databit_H}位二进制数据", '校验结果', '修正后的数据'])
 
         self.PassedData1_2.setText(str(passH))
         self.WorngDataAmount1_2.setText(str(wrongH))
@@ -663,6 +741,7 @@ class Ui_MainWindow(object):
     def generate_data_CRC(self):
         self.generate_data_CRC = []
         self.generate_data_CRC_SendData = []
+        self.crc_code = []
         def XOR(str1, str2):  # 实现模2减法
             ans = ''
             if str1[0] == '0':
@@ -694,7 +773,7 @@ class Ui_MainWindow(object):
 
 
         def generate_binary_data(num_bits=12):  # 生成随机二进制数据（8位）
-            return ''.join(random.choice('01') for _ in range(num_bits))
+            return ''.join(random.choice('01') for _ in range(int(self.DataLength_CRC.toPlainText())))
 
 
         generate_data_CRC = [generate_binary_data() for _ in range(100)]
@@ -709,21 +788,29 @@ class Ui_MainWindow(object):
             encoded_data_list.append(encoded_data)
             self.generate_data_CRC.append(str1)
             self.generate_data_CRC_SendData.append(encoded_data)
+            extra_data = encoded_data[len(str1):]
+            self.crc_code.append(extra_data)
+
+
 
 
         self.SendDataTable_3.setRowCount(100)  # 设置100行
-        self.SendDataTable_3.setColumnCount(2)  # 设置2列
+        self.SendDataTable_3.setColumnCount(3)  # 设置2列
 
         for i in range(100):
             # 第一列：原始8位数据
             self.SendDataTable_3.setItem(i, 0, QtWidgets.QTableWidgetItem(self.generate_data_CRC[i]))
 
             # 第三列：完整的发送数据
-            self.SendDataTable_3.setItem(i, 1, QtWidgets.QTableWidgetItem(self.generate_data_CRC_SendData[i]))
+            self.SendDataTable_3.setItem(i, 1, QtWidgets.QTableWidgetItem(self.crc_code[i]))
+            self.SendDataTable_3.setItem(i, 2, QtWidgets.QTableWidgetItem(self.generate_data_CRC_SendData[i]))
 
         # 调整表格列宽度以适应内容
         self.SendDataTable_3.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.SendDataTable_3.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_3.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_3.setHorizontalHeaderLabels(
+            [f"生成的{self.DataLength_CRC.toPlainText()}位二进制数据", '余数', '发送数据'])
 
 
     def receive_data_CRC(self):
@@ -808,11 +895,53 @@ class Ui_MainWindow(object):
         # 调整表格列宽度以适应内容
         self.ReceiveDataTable_3.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable_3.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.SendDataTable_3.setHorizontalHeaderLabels(
+            [f"收到的的{self.DataLength_CRC.toPlainText()}位二进制数据", '计算结果'])
         self.PassedData1_3.setText(str(pass_crc))
         self.WorngDataAmount1_3.setText(str(wrong_crc))
         self.UndetectedDataAmount1_3.setText(str(0))
         self.DataAmount1_3.setText(str(100))
         self.WrongPercent1_3.setText(str(wrong_crc) + "%")
+
+
+    def generate_data_CRC_Single(self):
+        def XOR(str1, str2):  # 实现模2减法
+            ans = ''
+            if str1[0] == '0':
+                return '0', str1[1:]
+            else:
+                for i in range(len(str1)):
+                    if (str1[i] == '0' and str2[i] == '0'):
+                        ans = ans + '0'
+                    elif (str1[i] == '1' and str2[i] == '1'):
+                        ans = ans + '0'
+                    else:
+                        ans = ans + '1'
+            return '1', ans[1:]
+
+        def CRC_Encoding(str1, str2):  # CRC编码
+            length = len(str2)
+            str3 = str1 + '0' * (length - 1)
+            ans = ''
+            yus = str3[0:length]
+            for i in range(len(str1)):
+                str4, yus = XOR(yus, str2)
+                ans = ans + str4
+                if i == len(str1) - 1:
+                    break
+                else:
+                    yus = yus + str3[i + length]
+            ans = str1 + yus
+            return ans
+
+
+        # 用户输入生成比特模式
+        str2 = "10011"
+
+
+
+        encoded_data = CRC_Encoding(self.InputSingleData_3.toPlainText(), str2)
+        self.CaculateSingleDataBit_3.setText(encoded_data)
 
 
 
@@ -865,3 +994,5 @@ class Ui_MainWindow(object):
         self.label_18.setText(_translate("MainWindow", "错误率："))
         self.ReceiveDataBox_3.setTitle(_translate("MainWindow", "发送数据"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.CRC), _translate("MainWindow", "CRC校验"))
+        self.label_19.setText(_translate("MainWindow", "生成数据位数："))
+        self.label_20.setText(_translate("MainWindow", "生成数据位数："))
