@@ -4,10 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c774bf31-5861-49ca-b20d-8a791fb44999" name="更改" comment="完成了对海明和CRC的任意位修改feature">
+    <list default="true" id="c774bf31-5861-49ca-b20d-8a791fb44999" name="更改" comment="完成了UI完善，实现了单个数据校验">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/version1.py" beforeDir="false" afterPath="$PROJECT_DIR$/version1.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/version4tabs.ui" beforeDir="false" afterPath="$PROJECT_DIR$/version4tabs.ui" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -209,7 +208,7 @@
       <workItem from="1731577180267" duration="15345000" />
       <workItem from="1731632909494" duration="2184000" />
       <workItem from="1731641432707" duration="678000" />
-      <workItem from="1731648382353" duration="10536000" />
+      <workItem from="1731648382353" duration="17277000" />
     </task>
     <task id="LOCAL-00001" summary="生成了最新的代码version3,准备将version3 的UI代码merge到version1中">
       <option name="closed" value="true" />
@@ -259,7 +258,15 @@
       <option name="project" value="LOCAL" />
       <updated>1731634498144</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="完成了UI完善，实现了单个数据校验">
+      <option name="closed" value="true" />
+      <created>1731660016666</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1731660016666</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -293,7 +300,8 @@
     <MESSAGE value="海明发送数据完成" />
     <MESSAGE value="海明校验完成" />
     <MESSAGE value="完成了对海明和CRC的任意位修改feature" />
-    <option name="LAST_COMMIT_MESSAGE" value="完成了对海明和CRC的任意位修改feature" />
+    <MESSAGE value="完成了UI完善，实现了单个数据校验" />
+    <option name="LAST_COMMIT_MESSAGE" value="完成了UI完善，实现了单个数据校验" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -305,13 +313,8 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/version1.py</url>
-          <line>524</line>
-          <option name="timeStamp" value="21" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/version1.py</url>
-          <line>604</line>
-          <option name="timeStamp" value="24" />
+          <line>613</line>
+          <option name="timeStamp" value="45" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -326,12 +329,13 @@
       <configuration name="PythonConfigurationType">
         <watch expression="modified_data_H" language="Python" />
         <watch expression="self.generate_data_H_original" language="Python" />
-        <watch expression="self.generate_data_H_originalVerify[i]" language="Python" />
+        <watch expression="length_Haming_Recalculate" language="Python" />
+        <watch expression="text_string" language="Python" />
       </configuration>
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/RFIDcrc$main.coverage" NAME="main 覆盖结果" MODIFIED="1731659444981" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/RFIDcrc$main.coverage" NAME="main 覆盖结果" MODIFIED="1731667443889" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/RFIDcrc$version1.coverage" NAME="version1 覆盖结果" MODIFIED="1731163615160" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/RFIDcrc$Haming.coverage" NAME="Haming 覆盖结果" MODIFIED="1731581845692" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/RFIDcrc$test.coverage" NAME="test 覆盖结果" MODIFIED="1731154080665" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />

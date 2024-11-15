@@ -499,7 +499,6 @@ class Ui_MainWindow(object):
         m = math.ceil(math.log(self.databit_H +1, 2))
         self.p_count_H = m
         data_bit_H1= ['0'] * (m + self.databit_H)
-        data_bit_H2 = ['0'] * (m + self.databit_H)
 
 
         for _ in range(100):
@@ -603,7 +602,6 @@ class Ui_MainWindow(object):
 
         # Convert the list of bits to a string
         data_bit_H1_str = ''.join(data_bit_H1)
-
         # Set the text with the resulting string
         self.CaculateSingleDataBit_2.setText(data_bit_H1_str)
 
@@ -619,7 +617,8 @@ class Ui_MainWindow(object):
 
             while index_p < len(data_bit_H1):
                 # 将 data_bit_H1[step-1] 转换为整数，并将其加上对应的数据
-                data_bit_H1[step - 1] = str(int(data_bit_H1[step - 1]) + int(data_bit_H1[index_p]))
+                if((step-1)!= index_p):
+                    data_bit_H1[step - 1] = str(int(data_bit_H1[step - 1]) + int(data_bit_H1[index_p]))
                 index_p += 1
                 count_H += 1
                 if count_H == step:
@@ -627,7 +626,7 @@ class Ui_MainWindow(object):
                     count_H = 0
 
             # 计算校验位，如果校验和为奇数则设置为 0，否则设置为 1
-            if (int(data_bit_H1[step - 1]) - 1) % 2 == 1:
+            if (int(data_bit_H1[step - 1])) % 2 == 1:
                 result_Haming_String += 0
             else:
                 result_Haming_String += step
@@ -643,9 +642,9 @@ class Ui_MainWindow(object):
         self.receive_data_H_Verify = []
         self.receive_data_H_Original = []
         self.receive_data_H_Result = []
+        self.ReCalculate =[]
         passH = 0
         wrongH = 0
-        undetectedH = 0
         modified_data_H = self.receive_data_H.copy()
 
         # 随机选择最多 20 个数据进行修改
@@ -655,7 +654,8 @@ class Ui_MainWindow(object):
         for index in indices_to_modify:
             # 获取需要修改的字符串
             current_data = list(modified_data_H[index])  # 转换为列表，以便修改
-            num_bits_to_change = random.randint(1, 3)  # 每个字符串最多更改 3 位
+            #num_bits_to_change = random.randint(1, 3)
+            num_bits_to_change = 1# 每个字符串最多更改 3 位
 
             # 随机选择要更改的位置
             positions_to_change = random.sample(range(len(current_data)), num_bits_to_change)
@@ -667,7 +667,20 @@ class Ui_MainWindow(object):
             # 更新该条数据
             modified_data_H[index] = ''.join(current_data)
 
-
+        for idx in range(100):
+            length_Haming_Recalculate = len(modified_data_H[0])
+            text = ['0'] * length_Haming_Recalculate
+            text_string = ''
+            for index in range(length_Haming_Recalculate):
+                if modified_data_H[idx][index] == '1':
+                    text[index] = '1'
+                else:
+                    text[index] = '0'
+                if math.log(index+1,2).is_integer():
+                    text[index] = '0'
+            text_string2 = self.calculate_parity_H(text)
+            text_string = ''.join(text_string2)
+            self.ReCalculate.append(text_string)
         for idx in range(100):
             if modified_data_H[idx] == self.generate_data_H_originalVerify[idx]:
                 self.receive_data_H_Result.append("正确")
@@ -684,19 +697,20 @@ class Ui_MainWindow(object):
                 self.correctFullCode[idx] = '未知'
 
         self.ReceiveDataTable_2.setRowCount(100)
-        self.ReceiveDataTable_2.setColumnCount(3)
+        self.ReceiveDataTable_2.setColumnCount(4)
 
         for i in range(100):
-            self.ReceiveDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.receive_data_H[i]))
+            self.ReceiveDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(modified_data_H[i]))
             self.ReceiveDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
                 ''.join(map(str, self.receive_data_H_Result[i]))))
             self.ReceiveDataTable_2.setItem(i, 2, QtWidgets.QTableWidgetItem(self.correctFullCode[i]))
+            self.ReceiveDataTable_2.setItem(i, 3, QtWidgets.QTableWidgetItem(self.ReCalculate[i]))
 
 
         self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
-        self.ReceiveDataTable_2.setHorizontalHeaderLabels([f"收到的{self.databit_H}位二进制数据", '校验结果', '修正后的数据'])
+        self.ReceiveDataTable_2.setHorizontalHeaderLabels([f"收到的{self.databit_H}位二进制数据", '校验结果', '修正后的数据','重计算后数据'])
 
         self.PassedData1_2.setText(str(passH))
         self.WorngDataAmount1_2.setText(str(wrongH))
