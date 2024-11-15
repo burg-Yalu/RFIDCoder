@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import math
 import random
+from itertools import count
 
 # Form implementation generated from reading ui file 'untitled.ui'
 #
@@ -319,11 +321,18 @@ class Ui_MainWindow(object):
 
         self.GenerateData.clicked.connect(self.generate_data)
         self.ReceiveDatalist.clicked.connect(self.receive_data)
+        self.databit_H = 16
         self.GenerateData_2.clicked.connect(self.generate_data_H)
         self.ReceiveDatalist_2.clicked.connect(self.receive_data_H)
         self.GenerateData_3.clicked.connect(self.generate_data_CRC)
         self.ReceiveDatalist_3.clicked.connect(self.receive_data_CRC)
 
+    def is_power_of_two(n):
+        if n <= 0:
+            return False
+        while n % 2 == 0:
+            n = n // 2
+        return True
 
     def generate_data(self):
         # 生成长度为100的8位二进制数组
@@ -451,55 +460,112 @@ class Ui_MainWindow(object):
         self.ReceiveDataTable.setColumnWidth(1, column_1_width)
         self.ReceiveDataTable.setColumnWidth(2, column_2_width)
 
+    import random
+    import math
+    from PyQt5 import QtWidgets
+
     def generate_data_H(self):
+        # n 为数据的位数，动态调整二进制数据的长度
         self.generate_data_H_original = []
         self.generate_data_H_originalVerify = []
         self.generate_data_H_SendData = []
         self.receive_data_H = []
+        self.generate_data_H_Original_AfterInsert =[]
+
+        # 动态计算需要多少个校验位
+        m = math.ceil(math.log(self.databit_H +1, 2))
+        self.p_count_H = m
+        data_bit_H1= ['0'] * (m + self.databit_H)
+        data_bit_H2 = ['0'] * (m + self.databit_H)
+
+
         for _ in range(100):
-            parity_bits_H_Original = [0] * 4
-            temp_data = ''.join(random.choice('01') for _ in range(8))
-            for i in range(4):
-                parity_bits_H_Original[i] = self.calculate_parity_H(temp_data, i)
-            self.generate_data_H_originalVerify.append(parity_bits_H_Original)
+            parity_bits_H_Original = [0] * m  # 校验位数量为 m
+            for i in range(m+ self.databit_H):
+                temp_data = ''.join(random.choice('01') for _ in range(self.databit_H))  # 随机生成 n 位数据
+            count = 0;
+            for j in range(self.databit_H+ m ):
+                if j==0 or j==1 or j==3 or j ==7 or j==15:
+                    continue
+                else:
+                   data_bit_H1[j] = temp_data[count]
+                   count += 1
+            # 计算校验位
+            full_Hamingcode = ''.join([str(i) for i in self.calculate_parity_H(data_bit_H1)])
+            self.generate_data_H_originalVerify.append(full_Hamingcode)
             self.generate_data_H_original.append(temp_data)
-            full_data = ['0'] * 12
-            data_idx = 0
-            for i in range(12):
-                if i not in [0, 1, 3, 7]:  # 校验位的索引，分别是1, 2, 4, 8
-                    full_data[i] = temp_data[data_idx]
-                    data_idx += 1
-            full_data[0], full_data[1], full_data[3], full_data[7] = parity_bits_H_Original[0], parity_bits_H_Original[1], parity_bits_H_Original[2], parity_bits_H_Original[3]
-            send_data = ''.join(map(str, full_data))
-            self.generate_data_H_SendData.append(send_data)
-            self.receive_data_H.append(send_data)
-        self.SendDataTable_2.setRowCount(100)  # 设置100行
-        self.SendDataTable_2.setColumnCount(3)  # 设置2列
+            self.receive_data_H.append(full_Hamingcode)
+
+
+
+        # 更新表格显示
+        self.SendDataTable_2.setRowCount(100)
+        self.SendDataTable_2.setColumnCount(2)
 
         for i in range(100):
-            # 第一列：原始8位数据
             self.SendDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.generate_data_H_original[i]))
 
-            # 第二列：奇偶校验位
-            self.SendDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
-                ''.join(map(str, self.generate_data_H_originalVerify[i]))))
+            self.SendDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(self.generate_data_H_originalVerify[i]))
 
-            # 第三列：完整的发送数据
-            self.SendDataTable_2.setItem(i, 2, QtWidgets.QTableWidgetItem(self.generate_data_H_SendData[i]))
-
-        # 调整表格列宽度以适应内容
         self.SendDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
         self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(2, QtWidgets.QHeaderView.Stretch)
 
-    #海明校验单个位校验位
-    def calculate_parity_H(self,temp_data, index):
-        parity = 0
-        for i in range(8):
-            if ((i >> index) & 1) == 1:  # 按照海明码规则选择对应的位
-                parity ^= int(temp_data[i])  # 异或校验
-        return parity
 
+    # 计算海明码单个校验位的方法
+    def calculate_parity_H(self, data_bit_H1):
+        for i in range(self.p_count_H):
+            step = 2 ** i
+            index_p = step - 1
+            count_H = 0
+            while index_p < len(data_bit_H1):
+                # 将 data_bit_H1[step-1] 转换为整数，并将其加上对应的数据
+                data_bit_H1[step - 1] = int(data_bit_H1[step - 1]) + int(data_bit_H1[index_p])
+                index_p += 1
+                count_H += 1
+                if count_H == step:
+                    index_p += step
+                    count_H = 0
+
+            # 计算校验位，如果校验和为奇数则设置为 0，否则设置为 1
+            if data_bit_H1[step - 1] % 2 == 1:
+                data_bit_H1[step - 1] = '0'
+            else:
+                data_bit_H1[step - 1] = '1'
+
+        return data_bit_H1
+
+    def calculate_parity_H_String(self, data_bit_H1):
+        result_Haming_String = 0
+        # 将 data_bit_H1 转换为可修改的列表
+        data_bit_H1 = list(data_bit_H1)
+
+        for i in range(self.p_count_H):
+            step = 2 ** i
+            index_p = step - 1
+            count_H = 0
+
+            while index_p < len(data_bit_H1):
+                # 将 data_bit_H1[step-1] 转换为整数，并将其加上对应的数据
+                data_bit_H1[step - 1] = str(int(data_bit_H1[step - 1]) + int(data_bit_H1[index_p]))
+                index_p += 1
+                count_H += 1
+                if count_H == step:
+                    index_p += step
+                    count_H = 0
+
+            # 计算校验位，如果校验和为奇数则设置为 0，否则设置为 1
+            if (int(data_bit_H1[step - 1]) - 1) % 2 == 1:
+                result_Haming_String += 0
+            else:
+                result_Haming_String += step
+
+        return result_Haming_String
+    def amount_check_H(self,data_bit,i):
+        count = 0
+        for j in range(len(data_bit)):
+            if data_bit[j] != self.generate_data_H_originalVerify[i][j]:
+                count+=1
+        return count
     def receive_data_H(self):
         self.receive_data_H_Verify = []
         self.receive_data_H_Original = []
@@ -507,90 +573,67 @@ class Ui_MainWindow(object):
         passH = 0
         wrongH = 0
         undetectedH = 0
+        modified_data_H = self.receive_data_H.copy()
 
-        # 随机选择需要修改的项数（不超过20项）
-        num_changes = random.randint(1, 20)
+        # 随机选择最多 20 个数据进行修改
+        num_changes = random.randint(1, 20)  # 随机选择 1 到 20 个字符串
+        indices_to_modify = random.sample(range(100), num_changes)  # 随机选择 100 个中需要更改的索引
 
-        # 随机选择要修改的元素的索引
-        indices_to_modify = random.sample(range(len(self.receive_data_H)), num_changes)
+        for index in indices_to_modify:
+            # 获取需要修改的字符串
+            current_data = list(modified_data_H[index])  # 转换为列表，以便修改
+            num_bits_to_change = random.randint(1, 3)  # 每个字符串最多更改 3 位
 
-        # 修改选中的数据
-        for idx in indices_to_modify:
-            # 当前二进制字符串
-            data = self.receive_data_H[idx]
+            # 随机选择要更改的位置
+            positions_to_change = random.sample(range(len(current_data)), num_bits_to_change)
 
-            # 确保数据是12位
-            if len(data) != 12:
-                continue
+            for pos in positions_to_change:
+                # 翻转该位置的位
+                current_data[pos] = '1' if current_data[pos] == '0' else '0'
 
-            # 随机选择要修改的位数（不超过3位）
-            num_bits_to_modify = random.randint(1, 3)
+            # 更新该条数据
+            modified_data_H[index] = ''.join(current_data)
 
-            # 生成随机的位索引进行修改
-            bit_indices = random.sample(range(12), num_bits_to_modify)
-
-            # 将数据转换为列表形式便于修改
-            data_list = list(data)
-
-            # 修改选中的位
-            for bit_idx in bit_indices:
-                # 翻转该位（0变1，1变0）
-                data_list[bit_idx] = '1' if data_list[bit_idx] == '0' else '0'
-
-            # 将修改后的数据重新转换为字符串
-            self.receive_data_H[idx] = ''.join(data_list)
-
-        # 遍历所有数据
-        for data in self.receive_data_H:
-            # 提取0, 1, 3, 7位
-            self.receive_data_H_Verify.append(data[0] + data[1] + data[3] + data[7])
-
-            # 提取其他位（2, 4, 5, 6, 8, 9, 10, 11位）
-            self.receive_data_H_Original.append(
-                data[2] + data[4] + data[5] + data[6] + data[8] + data[9] + data[10] + data[11])
 
         for idx in range(100):
-            if self.receive_data_H[idx] == self.generate_data_H_SendData[idx]:
+            if modified_data_H[idx] == self.generate_data_H_originalVerify[idx]:
                 self.receive_data_H_Result.append("正确")
                 passH += 1
                 continue
-            # 调用judge方法并修正条件判断
-            result = self.judge(self.receive_data_H_Verify[idx], self.receive_data_H_Original[idx])
-            if result == 0:
-                self.receive_data_H_Result.append("两位错以上")
-                wrongH += 1
-            else:
+            result = self.calculate_parity_H_String(modified_data_H[idx])
+            amount_H = self.amount_check_H(modified_data_H[idx],idx)
+            if amount_H == 1:
                 self.receive_data_H_Result.append(f"{result}位错")
                 wrongH += 1
+            else:
+                self.receive_data_H_Result.append("两位错以上")
+                wrongH += 1
 
-        self.ReceiveDataTable_2.setRowCount(100)  # 设置100行
-        self.ReceiveDataTable_2.setColumnCount(2)  # 设置2列
+        self.ReceiveDataTable_2.setRowCount(100)
+        self.ReceiveDataTable_2.setColumnCount(2)
 
         for i in range(100):
-            # 第一列：原始8位数据
             self.ReceiveDataTable_2.setItem(i, 0, QtWidgets.QTableWidgetItem(self.receive_data_H[i]))
-
-            # 第二列：奇偶校验位
             self.ReceiveDataTable_2.setItem(i, 1, QtWidgets.QTableWidgetItem(
                 ''.join(map(str, self.receive_data_H_Result[i]))))
 
-        # 调整表格列宽度以适应内容
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
-        self.SendDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(0, QtWidgets.QHeaderView.Stretch)
+        self.ReceiveDataTable_2.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+
         self.PassedData1_2.setText(str(passH))
         self.WorngDataAmount1_2.setText(str(wrongH))
         self.UndetectedDataAmount1_2.setText(str(0))
         self.DataAmount1_2.setText(str(100))
-        self.WrongPercent1_2.setText(str(wrongH)+"%")
+        self.WrongPercent1_2.setText(str(wrongH) + "%")
 
     # 修正后的 judge 方法
     def judge(self, verify, original):
+        # 原始校验位的计算方法
         p1 = original[0] + original[2] + original[4] + original[6]
         p2 = original[0] + original[2] + original[3] + original[5] + original[6]
         p3 = original[1] + original[2] + original[3] + original[7]
         p4 = original[4] + original[5] + original[6] + original[7]
 
-        # 将code改为可变列表
         code = ['0', '0', '0', '0']
         count = 0
 
@@ -609,15 +652,14 @@ class Ui_MainWindow(object):
         if p4.count('1') % 2 != 1:
             code[3] = '1'
             if code[3] != verify[3]:
-                count += 8  # 这个值可能是8，而不是4，因为 p4 影响到的是4位
+                count += 8
 
-        # 返回判断结果
         if code == list(verify):
             return 0
         else:
             return count
 
-#-------------------------------------------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------------------------------------
     def generate_data_CRC(self):
         self.generate_data_CRC = []
         self.generate_data_CRC_SendData = []
@@ -650,26 +692,15 @@ class Ui_MainWindow(object):
             ans = str1 + yus
             return ans
 
-        def CRC_Decoding(str1, str2):  # CRC解码
-            length = len(str2)
-            str3 = str1 + '0' * (length - 1)
-            yus = str3[0:length]
-            for i in range(len(str1)):
-                str4, yus = XOR(yus, str2)
-                if i == len(str1) - 1:
-                    break
-                else:
-                    yus = yus + str3[i + length]
-            return yus == '0' * len(yus)
 
-        def generate_binary_data(num_bits=8):  # 生成随机二进制数据（8位）
+        def generate_binary_data(num_bits=12):  # 生成随机二进制数据（8位）
             return ''.join(random.choice('01') for _ in range(num_bits))
 
 
         generate_data_CRC = [generate_binary_data() for _ in range(100)]
 
         # 用户输入生成比特模式
-        str2 = "100000111"
+        str2 = "10011"
 
         # 模拟发送这些数据并通过CRC编码
         encoded_data_list = []
@@ -714,21 +745,6 @@ class Ui_MainWindow(object):
                         ans = ans + '1'
             return '1', ans[1:]
 
-        def CRC_Encoding(str1, str2):  # CRC编码
-            length = len(str2)
-            str3 = str1 + '0' * (length - 1)
-            ans = ''
-            yus = str3[0:length]
-            for i in range(len(str1)):
-                str4, yus = XOR(yus, str2)
-                ans = ans + str4
-                if i == len(str1) - 1:
-                    break
-                else:
-                    yus = yus + str3[i + length]
-            ans = str1 + yus
-            return ans
-
         def CRC_Decoding(str1, str2):  # CRC解码
             length = len(str2)
             str3 = str1 + '0' * (length - 1)
@@ -769,7 +785,7 @@ class Ui_MainWindow(object):
 
         # 将修改后的数据和未修改的数据按顺序保存到 receive_data_CRC
         self.receive_data_CRC = modified_data_list
-        str2 = "100000111"
+        str2 = "10011"
 
         for i, encoded_data in enumerate(self.receive_data_CRC):
             flag = CRC_Decoding(encoded_data, str2)
